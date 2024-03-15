@@ -1,0 +1,156 @@
+<?php
+/**
+ * This file is part of the Magento 2 Shipping module of DPD Nederland B.V.
+ *
+ * Copyright (C) 2019  DPD Nederland B.V.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+use DpdConnect\ShippingHyva\ViewModel\CheckoutConfig;
+use Hyva\Theme\Model\ViewModelRegistry;
+
+/** @var ViewModelRegistry $viewModels */
+
+/** @var CheckoutConfig $checkoutConfigViewModel */
+$checkoutConfigViewModel = $viewModels->require(CheckoutConfig::class);
+
+$checkoutConfig = $checkoutConfigViewModel->getConfig();
+?>
+
+<?= $this->getChildHtml('dpd.googlemaps.api'); ?>
+
+<script>
+    function initDpdShipping() {
+        return {
+            error: null,
+            googleKey: '<?= $checkoutConfig['dpd_parcelshop_google_key'] ?>',
+            locale: '<?= $checkoutConfig['dpd_locale'] ?>' || 'nl',
+            saveUrl: '<?= $checkoutConfig['dpd_parcelshop_save_url'] ?>',
+            selectedParcelshop: null,
+            selectedParcelshopHtml: null,
+            token: '<?= $checkoutConfig['dpd_parcelshop_token'] ?>',
+            useDpdKey: <?= !empty($checkoutConfig['dpd_parcelshop_use_dpd_key']) ? 'true' : 'false' ?>,
+
+            init() {
+                Magewire.find('checkout.shipping-details.address-form').on('shipping_address_saved', () => {
+                    setTimeout(() => {
+                        const parcelshop = sessionStorage.getItem('selectedParcelshop');
+
+                        if (parcelshop) {
+                            this.selectParcelshop(JSON.parse(parcelshop));
+                        }
+                        else {
+                            this.showMap();
+                        }
+                    }, 500);
+                });
+
+                const parcelshop = sessionStorage.getItem('selectedParcelshop');
+
+                if (parcelshop) {
+                    this.selectParcelshop(JSON.parse(parcelshop));
+                }
+                else {
+                    this.showMap();
+                }
+            },
+
+            flatten(object) {
+                const urlSearchParams = new URLSearchParams();
+
+                for (const key in object) {
+                    const value = object[key];
+
+                    if (Array.isArray(value)) {
+                        value.forEach((nestedValue, index) => {
+                            for (const nestedKey in nestedValue) {
+                                urlSearchParams.append(key + '[' + index + '][' + nestedKey + ']', nestedValue[nestedKey] ?? '');
+                            }
+                        });
+                    }
+                    else {
+                        urlSearchParams.append(key, value ?? '');
+                    }
+                }
+
+                return urlSearchParams;
+            },
+
+            handleWindowClick(event) {
+                if (!event.target.classList.contains('dpd_connect_change_parcelshop')) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                sessionStorage.removeItem('selectedParcelshop');
+
+                this.selectedParcelshop = null;
+                this.selectedParcelshopHtml = null;
+
+                this.showMap();
+            },
+
+            selectParcelshop(parcelshop) {
+                this.selectedParcelshop = parcelshop;
+
+                sessionStorage.setItem('selectedParcelshop', JSON.stringify(this.selectedParcelshop));
+
+                fetch(this.saveUrl, {
+                    body: this.flatten(this.selectedParcelshop),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    method: 'POST'
+                }).then((response) => {
+                    response.text().then((text) => {
+                        this.selectedParcelshopHtml = text;
+                    });
+                });
+            },
+
+            showMap() {
+                this.error = null;
+
+                const shippingAddress = Magewire.find('checkout.shipping-details.address-form').get('address');
+
+                if (!shippingAddress.postcode || !shippingAddress.country_id) {
+                    this.error = hyva.str('No address entered. Please enter your address and try again.');
+
+                    return;
+                }
+
+                /** @var DPDConnect */
+                DPDConnect.onParcelshopSelected = this.selectParcelshop.bind(this);
+
+                const searchAddress = shippingAddress.street[0] + ' ' +
+                    shippingAddress.postcode + ' ' +
+                    shippingAddress.city + ' ' +
+                    shippingAddress.country_id;
+
+                if (this.useDpdKey) {
+
+                    /** @var DPDConnect */
+                    DPDConnect.show(this.token, searchAddress, this.locale);
+                }
+                else {
+
+                    /** @var DPDConnect */
+                    DPDConnect.show(this.token, searchAddress, this.locale, this.googleKey);
+                }
+            }
+        };
+    }
+</script>

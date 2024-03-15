@@ -1,0 +1,49 @@
+{
+    "name": "dpdconnect/magento2-shipping-hyva",
+    "description": "DPD Connect - Magento2 Shipping Hyva Compatibility module",
+    "require": {
+        "php": ">=7.2",
+        "magento/framework": ">=103.0.6",
+        "dpdconnect/php-sdk": "^1.1"
+    },
+    "type": "magento2-module",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "DPD",
+            "email": "pluginsupport@dpd.nl",
+            "homepage": "http://www.dpd.nl"
+        }
+    ],
+    "support": {
+        "email": "pluginsupport@dpd.nl",
+        "issues": "http://www.dpd.nl/"
+    },
+    "homepage": "https://www.dpd.com/nl/business_customers/hulp_en_tools/e_commerce/magento",
+    "keywords": ["dpd", "dpd parcelservice", "Magento2"],
+    "minimum-stability": "stable",
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Hyva\\DpdConnectShipping\\": ""
+        }
+    },
+    "require-dev": {
+        "magento/marketplace-eqp": "^2.0",
+        "overtrue/phplint": "^1.1"
+    },
+    "repositories": {
+        "magento": {
+            "type": "composer",
+            "url": "https://repo.magento.com/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "magento/composer-dependency-version-audit-plugin": false
+        }
+    }
+}
