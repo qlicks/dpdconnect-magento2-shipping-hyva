@@ -27,7 +27,7 @@
             "registration.php"
         ],
         "psr-4": {
-            "Hyva\\DpdConnectShipping\\": ""
+            "DpdConnect\\ShippingHyva\\": ""
         }
     },
     "require-dev": {
