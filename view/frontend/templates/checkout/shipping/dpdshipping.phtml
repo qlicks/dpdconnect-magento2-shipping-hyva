@@ -42,8 +42,20 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
             selectedParcelshopHtml: null,
             token: '<?= $checkoutConfig['dpd_parcelshop_token'] ?>',
             useDpdKey: <?= !empty($checkoutConfig['dpd_parcelshop_use_dpd_key']) ? 'true' : 'false' ?>,
+            validationError: null,
 
             init() {
+                document.addEventListener('click', (event) => {
+                    if (
+                        Object.values(event.target.classList).includes('btn-next') ||
+                        Object.values(event.target.classList).includes('btn-place-order')
+                    ) {
+                        this.handleButtonClick(event);
+                    }
+                }, {
+                    capture: true
+                });
+
                 Magewire.find('checkout.shipping-details.address-form').on('shipping_address_saved', () => {
                     setTimeout(() => {
                         const parcelshop = sessionStorage.getItem('selectedParcelshop');
@@ -88,6 +100,16 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
                 return urlSearchParams;
             },
 
+            handleButtonClick(event) {
+                const parcelShopId = document.querySelector('.parcelshopId');
+
+                if (!(parcelShopId) || !(parcelShopId.value)) {
+                    event.stopPropagation();
+
+                    this.validationError = hyva.str('This is a required field.');
+                }
+            },
+
             handleWindowClick(event) {
                 if (!event.target.classList.contains('dpd_connect_change_parcelshop')) {
                     return;
@@ -104,6 +126,7 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
             },
 
             selectParcelshop(parcelshop) {
+                this.validationError = null;
                 this.selectedParcelshop = parcelshop;
 
                 sessionStorage.setItem('selectedParcelshop', JSON.stringify(this.selectedParcelshop));
@@ -123,6 +146,7 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
 
             showMap() {
                 this.error = null;
+                this.validationError = null;
 
                 const shippingAddress = Magewire.find('checkout.shipping-details.address-form').get('address');
 
