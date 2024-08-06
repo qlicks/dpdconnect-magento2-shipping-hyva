@@ -43,4 +43,12 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
          x-html="selectedParcelshopHtml"
          x-show="selectedParcelshopHtml">
     </div>
+
+    <form>
+        <div class="field field-error field-reserved">
+            <ul class="messages">
+                <li x-html="validationError" x-show="validationError"></li>
+            </ul>
+        </div>
+    </form>
 </div>
