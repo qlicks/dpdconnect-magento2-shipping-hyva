@@ -43,7 +43,7 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
             token: '<?= $checkoutConfig['dpd_parcelshop_token'] ?>',
             useDpdKey: <?= !empty($checkoutConfig['dpd_parcelshop_use_dpd_key']) ? 'true' : 'false' ?>,
             validationError: null,
-
+            lastMapFrame: null,
             init() {
                 document.addEventListener('click', (event) => {
                     if (
@@ -56,29 +56,130 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
                     capture: true
                 });
 
-                Magewire.find('checkout.shipping-details.address-form').on('shipping_address_saved', () => {
-                    setTimeout(() => {
-                        const parcelshop = sessionStorage.getItem('selectedParcelshop');
+                try {
+                    Magewire.on('shipping_address_saved', () => {
+                        setTimeout(() => {
+                            const parcelshop = sessionStorage.getItem('selectedParcelshop');
 
-                        if (parcelshop) {
-                            this.selectParcelshop(JSON.parse(parcelshop));
-                        }
-                        else {
-                            this.showMap();
-                        }
-                    }, 500);
-                });
+                            if (parcelshop) {
+                                this.selectParcelshop(JSON.parse(parcelshop));
+                            } else {
+                                let searchAddress = this.getFormAddress();
+
+                                if(!searchAddress) {
+                                    return;
+                                }
+
+                                this.showMap(searchAddress);
+                            }
+                        }, 500);
+                    });
+                } catch (e) {}
+
+
+                try {
+                    Magewire.on('shipping_address_submitted', (id) => {
+                        setTimeout(() => {
+                            const parcelshop = sessionStorage.getItem('selectedParcelshop');
+
+                            if (parcelshop) {
+                                this.selectParcelshop(JSON.parse(parcelshop));
+                            } else {
+                                let searchAddress = this.getAddressById(id);
+
+                                if(!searchAddress) {
+                                    return;
+                                }
+
+                                this.showMap(this.formatAddress(searchAddress));
+                            }
+                        }, 500);
+                    });
+
+                    Magewire.on('shipping_address_activated', (id) => {
+                        setTimeout(() => {
+                            const parcelshop = sessionStorage.getItem('selectedParcelshop');
+    
+                            if (parcelshop) {
+                                this.selectParcelshop(JSON.parse(parcelshop));
+                            } else {
+                                let searchAddress = this.getAddressById(id);
+
+                                if(!searchAddress) {
+                                    return;
+                                }
+
+                                this.showMap(this.formatAddress(searchAddress));
+                            }
+                        }, 500);
+                    });
+                } catch (e) {}
 
                 const parcelshop = sessionStorage.getItem('selectedParcelshop');
 
                 if (parcelshop) {
                     this.selectParcelshop(JSON.parse(parcelshop));
-                }
-                else {
-                    this.showMap();
+                } else {
+                    let searchAddress = this.getFormAddress();
+
+                    if(!searchAddress) {
+                        return;
+                    }
+
+                    this.showMap(this.formatAddress(searchAddress));
                 }
             },
+            getAddress() {
+                const map = {};
+                document.querySelectorAll('.address-grid .address-item').forEach(li => {
+                    const id = li.querySelector('input[type="radio"]')?.value;
+                    const json = li.getAttribute('data-address');
+                    if (id && json) {
+                        try { map[String(id)] = JSON.parse(json); } catch {}
+                    }
+                });
+                document.querySelectorAll('.address-list .address-item').forEach(li => {
+                    const id = li.querySelector('input[type="radio"]')?.value;
+                    const json = li.getAttribute('data-address');
+                    if (id && json) {
+                        try { map[String(id)] = JSON.parse(json); } catch {}
+                    }
+                });
+                return map;
+            },
+            getAddressById(id) {
+                let addresses = this.getAddress();
+                let idAdd = id.id ? id.id : 0;
+                return addresses[idAdd] || null;
+            },
+            getFormAddress() {
+                try {
+                    addressForm = Magewire.find('checkout.shipping-details.address-form');
+                } catch (e) {}
+                try {
+                    addressForm = Magewire.find('checkout.shipping-details.address-list.form');
+                } catch (e) {}
 
+                if(!addressForm) {
+                    return null;
+                }
+                const shippingAddress = addressForm.get('address');
+
+                if (!shippingAddress.postcode || !shippingAddress.country_id) {
+                    this.error = hyva.str('No address entered. Please enter your address and try again.');
+                    return null;
+                }
+
+                return this.formatAddress(address);
+            },
+            formatAddress(address) {
+                const searchAddress = address.street[0] + ' ' +
+                    address.postcode + ' ' +
+                    address.city + ' ' +
+                    address.country_id;
+
+                return searchAddress;
+            },
             flatten(object) {
                 const urlSearchParams = new URLSearchParams();
 
@@ -144,37 +245,31 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
                 });
             },
 
-            showMap() {
+            showMap(searchAddress) {
                 this.error = null;
                 this.validationError = null;
+                this.lastMapFrame = null;
 
-                const shippingAddress = Magewire.find('checkout.shipping-details.address-form').get('address');
-
-                if (!shippingAddress.postcode || !shippingAddress.country_id) {
-                    this.error = hyva.str('No address entered. Please enter your address and try again.');
-
+                if(!searchAddress) {
                     return;
                 }
 
                 /** @var DPDConnect */
                 DPDConnect.onParcelshopSelected = this.selectParcelshop.bind(this);
 
-                const searchAddress = shippingAddress.street[0] + ' ' +
-                    shippingAddress.postcode + ' ' +
-                    shippingAddress.city + ' ' +
-                    shippingAddress.country_id;
-
                 if (this.useDpdKey) {
-
                     /** @var DPDConnect */
                     DPDConnect.show(this.token, searchAddress, this.locale);
-                }
-                else {
+                } else {
 
                     /** @var DPDConnect */
                     DPDConnect.show(this.token, searchAddress, this.locale, this.googleKey);
+
+                    if(document.getElementById('dpd-connect-map-container')) {
+                        this.lastMapFrame = document.getElementById('dpd-connect-map-container').innerHTML;
+                    }
                 }
             }
-        };
+        }
     }
 </script>

@@ -32,5 +32,15 @@
             <block name="dpdpickup_dpdpickup"
                    template="Hyva_DpdConnectShipping::checkout/shipping/method/dpdpickup.phtml"/>
         </referenceBlock>
+        <referenceBlock name="checkout.shipping-details.address-list.list">
+            <action method="setTemplate">
+                <argument name="template" xsi:type="string">Hyva_DpdConnectShipping::checkout/address-view/address-list/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="checkout.shipping-details.address-list.grid">
+            <action method="setTemplate">
+                <argument name="template" xsi:type="string">Hyva_DpdConnectShipping::checkout/address-view/address-list/grid.phtml</argument>
+            </action>
+        </referenceBlock>
     </body>
 </page>
