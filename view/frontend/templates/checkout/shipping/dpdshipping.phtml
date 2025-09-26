@@ -126,7 +126,7 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
                         return;
                     }
 
-                    this.showMap(this.formatAddress(searchAddress));
+                    this.showMap(searchAddress);
                 }
             },
             getAddress() {
@@ -170,7 +170,7 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
                     return null;
                 }
 
-                return this.formatAddress(address);
+                return this.formatAddress(shippingAddress);
             },
             formatAddress(address) {
                 const searchAddress = address.street[0] + ' ' +
@@ -200,7 +200,6 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
 
                 return urlSearchParams;
             },
-
             handleButtonClick(event) {
                 const parcelShopId = document.querySelector('.parcelshopId');
 
@@ -210,22 +209,16 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
                     this.validationError = hyva.str('This is a required field.');
                 }
             },
-
             handleWindowClick(event) {
                 if (!event.target.classList.contains('dpd_connect_change_parcelshop')) {
                     return;
                 }
 
                 event.preventDefault();
-
                 sessionStorage.removeItem('selectedParcelshop');
-
                 this.selectedParcelshop = null;
                 this.selectedParcelshopHtml = null;
-
-                this.showMap();
             },
-
             selectParcelshop(parcelshop) {
                 this.validationError = null;
                 this.selectedParcelshop = parcelshop;
@@ -244,7 +237,6 @@ $checkoutConfig = $checkoutConfigViewModel->getConfig();
                     });
                 });
             },
-
             showMap(searchAddress) {
                 this.error = null;
                 this.validationError = null;
