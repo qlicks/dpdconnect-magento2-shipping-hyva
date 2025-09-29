@@ -28,12 +28,14 @@ $checkoutConfigViewModel = $viewModels->require(CheckoutConfig::class);
 
 $checkoutConfig = $checkoutConfigViewModel->getConfig();
 ?>
-
+<div class="!hidden" id="dpd-connect-map-container"></div>
 <div x-data="initDpdShipping()" x-on:click.window="handleWindowClick($event)">
-    <div id="dpd-connect-map-container"
+    <div
          style="width: <?= $checkoutConfig['dpd_googlemaps_width'] ?>px; height: <?= $checkoutConfig['dpd_googlemaps_height'] ?>px;"
          x-cloak
-         x-show="!selectedParcelshopHtml && !error">
+         x-show="!selectedParcelshopHtml && !error"
+         x-html="lastMapFrame"
+    >
     </div>
 
     <div x-html="error" x-show="error"></div>
